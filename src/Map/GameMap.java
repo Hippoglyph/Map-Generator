@@ -24,10 +24,12 @@ public class GameMap {
 			}
 		}
 		generateIslands();
+		cleanUpSingleWaterTiles();
+		generateShallowWater();
 	}
-	
+
 	private void generateIslands() {
-		int numOfIslands = rnd.nextInt(10)+20;
+		int numOfIslands = rnd.nextInt(10)+15;
 		for(int i = 0; i < numOfIslands; i++)
 			createIsland();
 	}
@@ -36,8 +38,14 @@ public class GameMap {
 		int x = rnd.nextInt(getRowSize());
 		int y = rnd.nextInt(getColumnSize());
 		
-		if(!tiles[x][y].isWater())
-			return;
+		int tries = 0;
+		while(!tiles[x][y].isWater()){
+			x = rnd.nextInt(getRowSize());
+			y = rnd.nextInt(getColumnSize());
+			if(tries > 10)
+				return;
+			tries++;
+		}
 		
 		bfs(tiles[x][y]);
 	}
@@ -47,17 +55,18 @@ public class GameMap {
 		q.add(tile);
 		int count = 0;
 		int maxTiles = numOfTiles();
+		int type = getTileType(tile);
 		while (!q.isEmpty()){
 			tile = q.remove();
+			tile.setTypeId(type);
 			count++;
 			if(count > maxTiles)
 				return;
-			tile.setTypeId(Tile.GRASS);
 			for(int checkX = tile.xPos-1; checkX<tile.xPos+2;checkX++){
-				if(checkX < 0 || checkX >= getRowSize())
+				if(!isInXBounds(checkX))
 					continue;
 				for(int checkY = tile.yPos-1; checkY<tile.yPos+2;checkY++){
-					if(checkY < 0 || checkY >= getColumnSize())
+					if(!isInYBounds(checkY))
 						continue;
 					if(!tiles[checkX][checkY].isWater())
 						continue;
@@ -68,8 +77,109 @@ public class GameMap {
 		}
 	}
 
+	private int getTileType(Tile tile) {
+		if(tile.yPos < getColumnSize()*0.1 || tile.yPos > getColumnSize()*0.9)
+			return Tile.ICE;
+		if(tile.yPos < getColumnSize()*0.4 || tile.yPos > getColumnSize()*0.6){
+			if(rnd.nextInt(3) < 1)
+				return Tile.STONE;
+		}
+		if(tile.yPos < getColumnSize()*0.6 && tile.yPos > getColumnSize()*0.4){
+			if(rnd.nextInt(3) < 1)
+				return Tile.SAND;
+		}
+		return Tile.GRASS;
+	}
+	
+	private void generateShallowWater() {
+		for(int x = 0; x < getRowSize(); x++){
+			for(int y = 0; y < getColumnSize(); y++){
+				if(!tiles[x][y].isWater())
+					continue;
+				if(hasNonWaterNeigbor(tiles[x][y]))
+					tiles[x][y].setTypeId(Tile.SHALLOW_WATER);
+			}
+		}
+	}
+
+	private boolean hasNonWaterNeigbor(Tile tile) {
+		for(int checkX = tile.xPos-1; checkX<tile.xPos+2;checkX++){
+			if(!isInXBounds(checkX))
+				continue;
+			for(int checkY = tile.yPos-1; checkY<tile.yPos+2;checkY++){
+				if(!isInYBounds(checkY))
+					continue;
+				if(!tiles[checkX][checkY].isWater())
+					return true;
+			}
+		}
+		for(int checkX = tile.xPos-2; checkX<tile.xPos+3;checkX++){
+			if(!isInXBounds(checkX))
+				continue;
+			for(int checkY = tile.yPos-2; checkY<tile.yPos+3;checkY++){
+				if(!isInYBounds(checkY))
+					continue;
+				if(!tiles[checkX][checkY].isWater()){
+					if(rnd.nextInt(2) < 1)
+						return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	private void cleanUpSingleWaterTiles(){
+		for(int x = 0; x < getRowSize(); x++){
+			for(int y = 0; y < getColumnSize(); y++){
+				if(!tiles[x][y].isWater())
+					continue;
+				Tile tile = tiles[x][y];
+				int count = 0;
+				for(int checkX = tile.xPos-1; checkX<tile.xPos+2;checkX++){
+					if(!isInXBounds(checkX))
+						continue;
+					for(int checkY = tile.yPos-1; checkY<tile.yPos+2;checkY++){
+						if(!isInYBounds(checkY))
+							continue;
+						if(!tiles[checkX][checkY].isWater())
+							count++;
+					}
+				}
+				if(count > 6){//If has 6 non water neighbors
+					tile.setTypeId(getNeigborTile(tile));
+				}
+			}
+		}
+	}
+
+	private int getNeigborTile(Tile tile) {
+		for(int checkX = tile.xPos-1; checkX<tile.xPos+2;checkX++){
+			if(!isInXBounds(checkX))
+				continue;
+			for(int checkY = tile.yPos-1; checkY<tile.yPos+2;checkY++){
+				if(!isInYBounds(checkY))
+					continue;
+				if(!tiles[checkX][checkY].isWater())
+					return tiles[checkX][checkY].getTypeId();
+			}
+		}
+		return 0;//should not happend
+	}
+	
+	private boolean isInXBounds(int x){
+		if(x < 0 || x >= getRowSize())
+			return false;
+		return true;
+	}
+	
+	private boolean isInYBounds(int y){
+		if(y< 0 || y >= getColumnSize())
+			return false;
+		return true;
+	}
+
 	private int numOfTiles() {
-		return getRowSize()*getColumnSize()/(rnd.nextInt(20)+5);
+		return (int)1.8*getRowSize()*getColumnSize()/(rnd.nextInt(20)+5);
 	}
 
 	public int getRowSize(){
