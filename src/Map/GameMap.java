@@ -25,7 +25,60 @@ public class GameMap {
 		}
 		generateIslands();
 		cleanUpSingleWaterTiles();
+		generateLakes();
 		generateShallowWater();
+	}
+
+	private void generateLakes() {
+		int numOfLakes = rnd.nextInt(13)+2;
+		for(int i = 0; i < numOfLakes; i++)
+			createLakes();
+	}
+
+	private void createLakes() {
+		int x = rnd.nextInt(getRowSize());
+		int y = rnd.nextInt(getColumnSize());
+		
+		int tries = 0;
+		while(tiles[x][y].getTypeId() != Tile.GRASS){
+			x = rnd.nextInt(getRowSize());
+			y = rnd.nextInt(getColumnSize());
+			if(tries > 10)
+				return;
+			tries++;
+		}
+		
+		lakebfs(tiles[x][y]);
+	}
+	
+	private void lakebfs(Tile tile){
+		Queue<Tile> q = new ArrayDeque<>();
+		q.add(tile);
+		int count = 0;
+		int maxTiles = numOfLakeTiles();
+		while (!q.isEmpty()){
+			tile = q.remove();
+			tile.setTypeId(Tile.WATER);
+			count++;
+			if(count > maxTiles)
+				return;
+			for(int checkX = tile.xPos-1; checkX<tile.xPos+2;checkX++){
+				if(!isInXBounds(checkX))
+					continue;
+				for(int checkY = tile.yPos-1; checkY<tile.yPos+2;checkY++){
+					if(!isInYBounds(checkY))
+						continue;
+					if(tiles[checkX][checkY].isWater())
+						continue;
+					if(rnd.nextInt(3) < 1)
+						q.add(tiles[checkX][checkY]);
+				}
+			}
+		}
+	}
+
+	private int numOfLakeTiles() {
+		return getRowSize()*getColumnSize()/(rnd.nextInt(100)+5);
 	}
 
 	private void generateIslands() {
@@ -166,20 +219,20 @@ public class GameMap {
 		return 0;//should not happend
 	}
 	
-	private boolean isInXBounds(int x){
+	public boolean isInXBounds(int x){
 		if(x < 0 || x >= getRowSize())
 			return false;
 		return true;
 	}
 	
-	private boolean isInYBounds(int y){
+	public boolean isInYBounds(int y){
 		if(y< 0 || y >= getColumnSize())
 			return false;
 		return true;
 	}
 
 	private int numOfTiles() {
-		return (int)1.8*getRowSize()*getColumnSize()/(rnd.nextInt(20)+5);
+		return (int)1.5*getRowSize()*getColumnSize()/(rnd.nextInt(20)+5);
 	}
 
 	public int getRowSize(){
