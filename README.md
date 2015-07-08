@@ -1,3 +1,3 @@
 # Map-Generator
 This is a Map generator test
-Keybinds: Arrowkeys, numpad1 and numpad4
+Keybinds: Arrowkeys, numpad 1 4 and 5
