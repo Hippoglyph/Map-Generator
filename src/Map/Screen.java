@@ -33,9 +33,12 @@ public class Screen {
 		if(scDown)
 			scroll += 1;
 		
-		map.addToPosX(xMulti);
-		map.addToPosY(yMulti);
-		map.addToScroll(scroll);
+		if(xMulti != 0)
+			map.addToPosX(xMulti);
+		if(yMulti != 0)
+			map.addToPosY(yMulti);
+		if(scroll != 0)
+			map.addToScroll(scroll);
 	}
 
 	public void keyPressed(int keyCode) {
@@ -67,6 +70,8 @@ public class Screen {
 			scDown = false;
 		else if(keyCode == KeyEvent.VK_NUMPAD4)
 			scUp = false;
+		else if(keyCode == KeyEvent.VK_NUMPAD5)
+			map.newMap();
 	}
 
 }
